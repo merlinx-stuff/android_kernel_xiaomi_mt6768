@@ -128,7 +128,7 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data,
 	if (!client) {
 		return -EINVAL;
 	} else if (len > C_I2C_FIFO_SIZE) {
-		pr_err(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		pr_debug(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
 	mutex_lock(&akm09911_i2c_mutex);
@@ -146,7 +146,7 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data,
 	err = i2c_transfer(client->adapter, msgs,
 			   ARRAY_SIZE(msgs));
 	if (err != 2) {
-		pr_err("i2c_transfer error: (%d %p %d) %d\n", addr, data, len,
+		pr_debug("i2c_transfer error: (%d %p %d) %d\n", addr, data, len,
 			 err);
 		err = -EIO;
 	} else {
@@ -169,7 +169,7 @@ static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data,
 		return -EINVAL;
 	} else if (len >= C_I2C_FIFO_SIZE) {
 		mutex_unlock(&akm09911_i2c_mutex);
-		pr_err(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		pr_debug(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
 
@@ -181,7 +181,7 @@ static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data,
 	err = i2c_master_send(client, buf, num);
 	if (err < 0) {
 		mutex_unlock(&akm09911_i2c_mutex);
-		pr_err("send command error!!\n");
+		pr_debug("send command error!!\n");
 		return -EFAULT;
 	}
 	mutex_unlock(&akm09911_i2c_mutex);
@@ -230,7 +230,7 @@ static long AKI2C_RxData(char *rxData, int length)
 
 	if (loop_i >= AKM09911_RETRY_COUNT) {
 		mutex_unlock(&akm09911_i2c_mutex);
-		pr_err("%s retry over %d\n", __func__, AKM09911_RETRY_COUNT);
+		pr_debug("%s retry over %d\n", __func__, AKM09911_RETRY_COUNT);
 		return -EIO;
 	}
 	mutex_unlock(&akm09911_i2c_mutex);
@@ -288,7 +288,7 @@ static long AKI2C_TxData(char *txData, int length)
 
 	if (loop_i >= AKM09911_RETRY_COUNT) {
 		mutex_unlock(&akm09911_i2c_mutex);
-		pr_err("%s retry over %d\n", __func__, AKM09911_RETRY_COUNT);
+		pr_debug("%s retry over %d\n", __func__, AKM09911_RETRY_COUNT);
 		return -EIO;
 	}
 	mutex_unlock(&akm09911_i2c_mutex);
@@ -476,13 +476,13 @@ static int AKECS_CheckDevice(void)
 		return -ENXIO;
 
 	akm_device = buffer[1];
-	pr_info("srx--akm09911--checkdevice00buf0=%x,buf1=%x\n", buffer[0],
+	pr_debug("srx--akm09911--checkdevice00buf0=%x,buf1=%x\n", buffer[0],
 		buffer[1]);
 	if ((akm_device == 0x05) ||
 	    (akm_device == 0x04)) { /* ak09911 & ak09912 */
 		ret = AKECS_ReadFuse();
 		if (ret < 0) {
-			pr_err("AKM09911 akm09911_probe: read fuse fail\n");
+			pr_debug("AKM09911 akm09911_probe: read fuse fail\n");
 			return -ENXIO;
 		}
 	} else if (akm_device ==
@@ -564,7 +564,7 @@ static long AKECS_GetData(char *rbuf, int size)
 #endif
 
 	if (size < SENSOR_DATA_SIZE) {
-		pr_err("buff size is too small %d!\n", size);
+		pr_debug("buff size is too small %d!\n", size);
 		return -1;
 	}
 
@@ -578,7 +578,7 @@ static long AKECS_GetData(char *rbuf, int size)
 	for (loop_i = 0; loop_i < AKM09911_RETRY_COUNT; loop_i++) {
 		ret = AKI2C_RxData(rbuf, 1);
 		if (ret) {
-			pr_err("read ST1 resigster failed!\n");
+			pr_debug("read ST1 resigster failed!\n");
 			return -1;
 		}
 
@@ -594,7 +594,7 @@ static long AKECS_GetData(char *rbuf, int size)
 	}
 
 	if (loop_i >= AKM09911_RETRY_COUNT) {
-		pr_err("Data read retry larger the max count!\n");
+		pr_debug("Data read retry larger the max count!\n");
 		if (factory_mode == 0)
 			/* if return we can not get data at factory mode */
 			return -1;
@@ -609,7 +609,7 @@ static long AKECS_GetData(char *rbuf, int size)
 	ret = AKI2C_RxData(&rbuf[1], SENSOR_DATA_SIZE - 1);
 #endif
 	if (ret < 0) {
-		pr_err("AKM8975 akm8975_work_func: I2C failed\n");
+		pr_debug("AKM8975 akm8975_work_func: I2C failed\n");
 		return -1;
 	}
 	rbuf[0] = temp;
@@ -1221,20 +1221,20 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf,
 	if (ret != 0) {
 		atomic_set(&data->layout, layout);
 		if (!hwmsen_get_convert(layout, &data->cvt))
-			pr_err("HWMSEN_GET_CONVERT function error!\r\n");
+			pr_debug("HWMSEN_GET_CONVERT function error!\r\n");
 		else if (!hwmsen_get_convert(data->hw.direction, &data->cvt))
-			pr_err("invalid layout: %d, restore to %d\n", layout,
+			pr_debug("invalid layout: %d, restore to %d\n", layout,
 				 data->hw.direction);
 		else {
-			pr_err("invalid layout: (%d, %d)\n", layout,
+			pr_debug("invalid layout: (%d, %d)\n", layout,
 				 data->hw.direction);
 			ret = hwmsen_get_convert(0, &data->cvt);
 			if (!ret)
-				pr_err(
+				pr_debug(
 					"HWMSEN_GET_CONVERT function error!\r\n");
 		}
 	} else
-		pr_err("invalid format = '%s'\n", buf);
+		pr_debug("invalid format = '%s'\n", buf);
 
 	return count;
 }
@@ -1262,7 +1262,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	struct akm09911_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (obj == NULL) {
-		pr_err("akm09911_i2c_data is null!!\n");
+		pr_debug("akm09911_i2c_data is null!!\n");
 		return 0;
 	}
 
@@ -1278,14 +1278,14 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf,
 	int trace;
 
 	if (obj == NULL) {
-		pr_err("akm09911_i2c_data is null!!\n");
+		pr_debug("akm09911_i2c_data is null!!\n");
 		return 0;
 	}
 
 	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&obj->trace, trace);
 	else
-		pr_err("invalid content: '%s', length = %zu\n", buf, count);
+		pr_debug("invalid content: '%s', length = %zu\n", buf, count);
 
 	return count;
 }
@@ -1320,7 +1320,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri,
 	ret = kstrtoint(buf, 10, &_nDirection);
 	if (ret != 0) {
 		if (hwmsen_get_convert(_nDirection, &_pt_i2c_obj->cvt))
-			pr_err("ERR: fail to set direction\n");
+			pr_debug("ERR: fail to set direction\n");
 	}
 
 	pr_debug("[%s] set direction: %d\n", __func__, _nDirection);
@@ -1336,7 +1336,7 @@ static ssize_t show_power_status(struct device_driver *ddri, char *buf)
 	struct akm09911_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (obj == NULL) {
-		pr_err("i2c_data obj is null!!\n");
+		pr_debug("i2c_data obj is null!!\n");
 		return 0;
 	}
 	ret = AKI2C_RxData(&uData, 1);
@@ -1413,7 +1413,7 @@ static int akm09911_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, akm09911_attr_list[idx]);
 		if (err) {
-			pr_err("driver_create_file (%s) = %d\n",
+			pr_debug("driver_create_file (%s) = %d\n",
 				 akm09911_attr_list[idx]->attr.name, err);
 			break;
 		}
@@ -1459,14 +1459,14 @@ static int akm09911_enable(int en)
 		f_obj->enable = true;
 		err = AKECS_SetMode(AK09911_MODE_SNG_MEASURE);
 		if (err < 0) {
-			pr_err("%s:AKECS_SetMode Error.\n", __func__);
+			pr_debug("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
 		}
 	} else {
 		f_obj->enable = false;
 		err = AKECS_SetMode(AK09911_MODE_POWERDOWN);
 		if (err < 0) {
-			pr_err("%s:AKECS_SetMode Error.\n", __func__);
+			pr_debug("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
 		}
 	}
@@ -1599,12 +1599,12 @@ static int akm09911_factory_enable_sensor(bool enabledisable,
 
 	err = akm09911_enable(enabledisable == true ? 1 : 0);
 	if (err) {
-		pr_err("%s enable sensor failed!\n", __func__);
+		pr_debug("%s enable sensor failed!\n", __func__);
 		return -1;
 	}
 	err = akm09911_batch(0, sample_periods_ms * 1000000, 0);
 	if (err) {
-		pr_err("%s enable set batch failed!\n", __func__);
+		pr_debug("%s enable set batch failed!\n", __func__);
 		return -1;
 	}
 	return 0;
@@ -1676,7 +1676,7 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 
 	err = get_mag_dts_func(client->dev.of_node, &data->hw);
 	if (err < 0) {
-		pr_err("get dts info fail\n");
+		pr_debug("get dts info fail\n");
 		err = -EFAULT;
 		goto exit_kfree;
 	}
@@ -1686,7 +1686,7 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 	data->hw.direction--;
 	err = hwmsen_get_convert(data->hw.direction, &data->cvt);
 	if (err) {
-		pr_err("invalid direction: %d\n", data->hw.direction);
+		pr_debug("invalid direction: %d\n", data->hw.direction);
 		goto exit_kfree;
 	}
 	atomic_set(&data->layout, data->hw.direction);
@@ -1701,14 +1701,14 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 	/* Check connection */
 	err = AKECS_CheckDevice();
 	if (err < 0) {
-		pr_err(
+		pr_debug(
 			"AKM09911 akm09911_probe: check device connect error\n");
 		goto exit_init_failed;
 	}
 
 	err = mag_factory_device_register(&akm09911_factory_device);
 	if (err) {
-		pr_err("misc device register failed, err = %d\n", err);
+		pr_debug("misc device register failed, err = %d\n", err);
 		goto exit_misc_device_register_failed;
 	}
 
@@ -1716,7 +1716,7 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 	err = akm09911_create_attr(
 		&(akm09911_init_info.platform_diver_addr->driver));
 	if (err) {
-		pr_err("create attribute err = %d\n", err);
+		pr_debug("create attribute err = %d\n", err);
 		goto exit_sysfs_create_group_failed;
 	}
 
@@ -1731,11 +1731,11 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 	strlcpy(ctl.libinfo.libname, "akm", sizeof(ctl.libinfo.libname));
 	ctl.libinfo.layout = AKECS_SetCert();
 	ctl.libinfo.deviceid = akm_device;
-	pr_info("srx--akm09911--layout=%d,did=%d\n", ctl.libinfo.layout,
+	pr_debug("srx--akm09911--layout=%d,did=%d\n", ctl.libinfo.layout,
 		ctl.libinfo.deviceid);
 	err = mag_register_control_path(&ctl);
 	if (err) {
-		pr_err("register mag control path err\n");
+		pr_debug("register mag control path err\n");
 		goto exit_kfree;
 	}
 
@@ -1744,7 +1744,7 @@ static int akm09911_i2c_probe(struct i2c_client *client,
 
 	err = mag_register_data_path(&mag_data);
 	if (err) {
-		pr_err("register data control path err\n");
+		pr_debug("register data control path err\n");
 		goto exit_kfree;
 	}
 
@@ -1758,7 +1758,7 @@ exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 exit:
-	pr_err("%s: err = %d\n", __func__, err);
+	pr_debug("%s: err = %d\n", __func__, err);
 	akm09911_init_flag = -1;
 	data = NULL;
 	new_client = NULL;
@@ -1774,7 +1774,7 @@ static int akm09911_i2c_remove(struct i2c_client *client)
 	err = akm09911_delete_attr(
 		&(akm09911_init_info.platform_diver_addr->driver));
 	if (err)
-		pr_err("akm09911_delete_attr fail: %d\n", err);
+		pr_debug("akm09911_delete_attr fail: %d\n", err);
 
 	this_client = NULL;
 	i2c_unregister_device(client);
@@ -1794,7 +1794,7 @@ static int akm09911_remove(void)
 static int akm09911_local_init(void)
 {
 	if (i2c_add_driver(&akm09911_i2c_driver)) {
-		pr_err("i2c_add_driver error\n");
+		pr_debug("i2c_add_driver error\n");
 		return -1;
 	}
 	if (-1 == akm09911_init_flag)

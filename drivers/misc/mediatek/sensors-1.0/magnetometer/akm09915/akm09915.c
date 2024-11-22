@@ -165,13 +165,13 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data,
 		return -EINVAL;
 	} else if (len > C_I2C_FIFO_SIZE) {
 		mutex_unlock(&akm09915_i2c_mutex);
-		pr_err(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		pr_debug(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
 
 	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {
-		pr_err("i2c_transfer error: (%d %p %d) %d\n", addr, data, len,
+		pr_debug("i2c_transfer error: (%d %p %d) %d\n", addr, data, len,
 			 err);
 		err = -EIO;
 	} else {
@@ -194,7 +194,7 @@ static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data,
 		return -EINVAL;
 	} else if (len >= C_I2C_FIFO_SIZE) {
 		mutex_unlock(&akm09915_i2c_mutex);
-		pr_err(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		pr_debug(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
 
@@ -206,7 +206,7 @@ static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data,
 	err = i2c_master_send(client, buf, num);
 	if (err < 0) {
 		mutex_unlock(&akm09915_i2c_mutex);
-		pr_err("send command error!!\n");
+		pr_debug("send command error!!\n");
 		return -EFAULT;
 	}
 	mutex_unlock(&akm09915_i2c_mutex);
@@ -254,7 +254,7 @@ static long AKI2C_RxData(char *rxData, int length)
 
 	if (loop_i >= AKM09915_RETRY_COUNT) {
 		mutex_unlock(&akm09915_i2c_mutex);
-		pr_err("%s retry over %d\n", __func__,
+		pr_debug("%s retry over %d\n", __func__,
 			   AKM09915_RETRY_COUNT);
 		return -EIO;
 	}
@@ -312,7 +312,7 @@ static long AKI2C_TxData(char *txData, int length)
 
 	if (loop_i >= AKM09915_RETRY_COUNT) {
 		mutex_unlock(&akm09915_i2c_mutex);
-		pr_err("%s retry over %d\n", __func__,
+		pr_debug("%s retry over %d\n", __func__,
 			   AKM09915_RETRY_COUNT);
 		return -EIO;
 	}
@@ -516,7 +516,7 @@ static long AKECS_GetData(char *rbuf, int size)
 #endif
 
 	if (size < SENSOR_DATA_SIZE) {
-		pr_err("buff size is too small %d!\n", size);
+		pr_debug("buff size is too small %d!\n", size);
 		return -1;
 	}
 
@@ -530,7 +530,7 @@ static long AKECS_GetData(char *rbuf, int size)
 	for (loop_i = 0; loop_i < AKM09915_RETRY_COUNT; loop_i++) {
 		ret = AKI2C_RxData(rbuf, 1);
 		if (ret) {
-			pr_err("read ST1 resigster failed!\n");
+			pr_debug("read ST1 resigster failed!\n");
 			return -1;
 		}
 
@@ -561,7 +561,7 @@ static long AKECS_GetData(char *rbuf, int size)
 	ret = AKI2C_RxData(&rbuf[1], SENSOR_DATA_SIZE - 1);
 #endif
 	if (ret < 0) {
-		pr_err("AKM8975 akm8975_work_func: I2C failed\n");
+		pr_debug("AKM8975 akm8975_work_func: I2C failed\n");
 		return -1;
 	}
 	rbuf[0] = temp;
@@ -1376,17 +1376,17 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf,
 	if (ret != 0) {
 		atomic_set(&data->layout, layout);
 		if (!hwmsen_get_convert(layout, &data->cvt))
-			pr_err("HWMSEN_GET_CONVERT function error!\r\n");
+			pr_debug("HWMSEN_GET_CONVERT function error!\r\n");
 		else if (!hwmsen_get_convert(data->hw.direction, &data->cvt))
-			pr_err("invalid layout: %d, restore to %d\n",
+			pr_debug("invalid layout: %d, restore to %d\n",
 				   layout, data->hw.direction);
 		else {
-			pr_err("invalid layout: (%d, %d)\n", layout,
+			pr_debug("invalid layout: (%d, %d)\n", layout,
 				   data->hw.direction);
 			hwmsen_get_convert(0, &data->cvt);
 		}
 	} else
-		pr_err("invalid format = '%s'\n", buf);
+		pr_debug("invalid format = '%s'\n", buf);
 
 	return count;
 }
@@ -1414,7 +1414,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	struct akm09915_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (obj == NULL) {
-		pr_err("akm09915_i2c_data is null!!\n");
+		pr_debug("akm09915_i2c_data is null!!\n");
 		return 0;
 	}
 
@@ -1430,14 +1430,14 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf,
 	int trace;
 
 	if (obj == NULL) {
-		pr_err("akm09915_i2c_data is null!!\n");
+		pr_debug("akm09915_i2c_data is null!!\n");
 		return 0;
 	}
 
 	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&obj->trace, trace);
 	else
-		pr_err("invalid content: '%s', length = %zu\n", buf, count);
+		pr_debug("invalid content: '%s', length = %zu\n", buf, count);
 
 	return count;
 }
@@ -1472,7 +1472,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri,
 	ret = kstrtoint(buf, 10, &_nDirection);
 	if (ret != 0) {
 		if (hwmsen_get_convert(_nDirection, &_pt_i2c_obj->cvt))
-			pr_err("ERR: fail to set direction\n");
+			pr_debug("ERR: fail to set direction\n");
 	}
 
 	pr_debug("[%s] set direction: %d\n", __func__, _nDirection);
@@ -1488,7 +1488,7 @@ static ssize_t show_power_status(struct device_driver *ddri, char *buf)
 	struct akm09915_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (obj == NULL) {
-		pr_err("i2c_data obj is null!!\n");
+		pr_debug("i2c_data obj is null!!\n");
 		return 0;
 	}
 	ret = AKI2C_RxData(&uData, 1);
@@ -1565,7 +1565,7 @@ static int akm09915_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, akm09915_attr_list[idx]);
 		if (err) {
-			pr_err("driver_create_file (%s) = %d\n",
+			pr_debug("driver_create_file (%s) = %d\n",
 				   akm09915_attr_list[idx]->attr.name, err);
 			break;
 		}
@@ -1638,7 +1638,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 	unsigned char sense_info[AKM_SENSOR_INFO_SIZE];
 	unsigned char sense_conf[AKM_SENSOR_CONF_SIZE];
 
-	/* pr_err("akm09915 cmd:0x%x\n", cmd); */
+	/* pr_debug("akm09915 cmd:0x%x\n", cmd); */
 	switch (cmd) {
 	case ECS_IOCTL_WRITE:
 		/* AKMFUNC("ECS_IOCTL_WRITE"); */
@@ -1840,7 +1840,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case MSENSOR_IOCTL_READ_CHIPINFO:
 		if (argp == NULL) {
-			pr_err("IO parameter pointer is NULL!\r\n");
+			pr_debug("IO parameter pointer is NULL!\r\n");
 			break;
 		}
 
@@ -1852,7 +1852,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case MSENSOR_IOCTL_READ_SENSORDATA:
 		if (argp == NULL) {
-			pr_err("IO parameter pointer is NULL!\r\n");
+			pr_debug("IO parameter pointer is NULL!\r\n");
 			break;
 		}
 
@@ -1865,7 +1865,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case MSENSOR_IOCTL_SENSOR_ENABLE:
 		if (argp == NULL) {
-			pr_err("IO parameter pointer is NULL!\r\n");
+			pr_debug("IO parameter pointer is NULL!\r\n");
 			break;
 		}
 		if (copy_from_user(&enable, argp, sizeof(enable))) {
@@ -1888,7 +1888,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
 		if (argp == NULL) {
-			pr_err("IO parameter pointer is NULL!\r\n");
+			pr_debug("IO parameter pointer is NULL!\r\n");
 			break;
 		}
 
@@ -1913,7 +1913,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	default:
-		pr_err("%s not supported = 0x%04x", __func__, cmd);
+		pr_debug("%s not supported = 0x%04x", __func__, cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -2194,7 +2194,7 @@ int akm09915_operate(void *self, uint32_t command, void *buff_in, int size_in,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2207,7 +2207,7 @@ int akm09915_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2229,7 +2229,7 @@ int akm09915_operate(void *self, uint32_t command, void *buff_in, int size_in,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			msensor_data = (struct hwm_sensor_data *)buff_out;
@@ -2256,7 +2256,7 @@ int akm09915_operate(void *self, uint32_t command, void *buff_in, int size_in,
 		}
 		break;
 	default:
-		pr_err("msensor operate function no this parameter %d!\n",
+		pr_debug("msensor operate function no this parameter %d!\n",
 			   command);
 		err = -1;
 		break;
@@ -2286,7 +2286,7 @@ int akm09915_orientation_operate(void *self, uint32_t command, void *buff_in,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2299,7 +2299,7 @@ int akm09915_orientation_operate(void *self, uint32_t command, void *buff_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2333,7 +2333,7 @@ int akm09915_orientation_operate(void *self, uint32_t command, void *buff_in,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			osensor_data = (struct hwm_sensor_data *)buff_out;
@@ -2359,7 +2359,7 @@ int akm09915_orientation_operate(void *self, uint32_t command, void *buff_in,
 		}
 		break;
 	default:
-		pr_err("gsensor operate function no this parameter %d!\n",
+		pr_debug("gsensor operate function no this parameter %d!\n",
 			   command);
 		err = -1;
 		break;
@@ -2391,7 +2391,7 @@ int akm09915_gyroscope_operate(void *self, uint32_t command, void *buff_in,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2401,7 +2401,7 @@ int akm09915_gyroscope_operate(void *self, uint32_t command, void *buff_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2436,7 +2436,7 @@ int akm09915_gyroscope_operate(void *self, uint32_t command, void *buff_in,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			gyrosensor_data = (struct hwm_sensor_data *)buff_out;
@@ -2466,7 +2466,7 @@ int akm09915_gyroscope_operate(void *self, uint32_t command, void *buff_in,
 		}
 		break;
 	default:
-		pr_err(
+		pr_debug(
 			"gyrosensor operate function no this parameter %d!\n",
 			command);
 		err = -1;
@@ -2497,7 +2497,7 @@ int akm09915_rotation_vector_operate(void *self, uint32_t command,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2507,7 +2507,7 @@ int akm09915_rotation_vector_operate(void *self, uint32_t command,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2541,7 +2541,7 @@ int akm09915_rotation_vector_operate(void *self, uint32_t command,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			RV_data = (struct hwm_sensor_data *)buff_out;
@@ -2566,7 +2566,7 @@ int akm09915_rotation_vector_operate(void *self, uint32_t command,
 		}
 		break;
 	default:
-		pr_err("RV  operate function no this parameter %d!\n",
+		pr_debug("RV  operate function no this parameter %d!\n",
 			   command);
 		err = -1;
 		break;
@@ -2596,7 +2596,7 @@ int akm09915_gravity_operate(void *self, uint32_t command, void *buff_in,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2608,7 +2608,7 @@ int akm09915_gravity_operate(void *self, uint32_t command, void *buff_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2642,7 +2642,7 @@ int akm09915_gravity_operate(void *self, uint32_t command, void *buff_in,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			gravity_data = (struct hwm_sensor_data *)buff_out;
@@ -2669,7 +2669,7 @@ int akm09915_gravity_operate(void *self, uint32_t command, void *buff_in,
 		}
 		break;
 	default:
-		pr_err("gravity operate function no this parameter %d!\n",
+		pr_debug("gravity operate function no this parameter %d!\n",
 			   command);
 		err = -1;
 		break;
@@ -2700,7 +2700,7 @@ int akm09915_linear_accelration_operate(void *self, uint32_t command,
 	switch (command) {
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Set delay parameter error!\n");
+			pr_debug("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2712,7 +2712,7 @@ int akm09915_linear_accelration_operate(void *self, uint32_t command,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("Enable sensor parameter error!\n");
+			pr_debug("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -2746,7 +2746,7 @@ int akm09915_linear_accelration_operate(void *self, uint32_t command,
 	case SENSOR_GET_DATA:
 		if ((buff_out == NULL) ||
 		    (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("get sensor data parameter error!\n");
+			pr_debug("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			LA_data = (struct hwm_sensor_data *)buff_out;
@@ -2771,7 +2771,7 @@ int akm09915_linear_accelration_operate(void *self, uint32_t command,
 		}
 		break;
 	default:
-		pr_err(
+		pr_debug(
 			"linear_accelration operate function no this parameter %d!\n",
 			command);
 		err = -1;
@@ -2816,7 +2816,7 @@ static int akm09915_enable(int en)
 
 		err = AKECS_SetMode(AK09915_MODE_SNG_MEASURE);
 		if (err < 0) {
-			pr_err("%s:AKECS_SetMode Error.\n", __func__);
+			pr_debug("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
 		}
 	} else {
@@ -2825,7 +2825,7 @@ static int akm09915_enable(int en)
 			atomic_set(&open_flag, 0);
 			err = AKECS_SetMode(AK09915_MODE_POWERDOWN);
 			if (err < 0) {
-				pr_err("%s:AKECS_SetMode Error.\n",
+				pr_debug("%s:AKECS_SetMode Error.\n",
 					   __func__);
 				return err;
 			}
@@ -2899,7 +2899,7 @@ static int akm09915_i2c_probe(struct i2c_client *client,
 	/* get customization and power on */
 	err = get_mag_dts_func(client->dev.of_node, &data->hw);
 	if (err < 0) {
-		pr_err("get dts info fail\n");
+		pr_debug("get dts info fail\n");
 		return 0;
 	}
 	atomic_set(&data->layout, data->hw.direction);
@@ -2916,7 +2916,7 @@ static int akm09915_i2c_probe(struct i2c_client *client,
 	/* Check connection */
 	err = AKECS_CheckDevice();
 	if (err < 0) {
-		pr_err(
+		pr_debug(
 			"AKM09915 akm09915_probe: check device connect error\n");
 		goto exit_init_failed;
 	}
@@ -2925,13 +2925,13 @@ static int akm09915_i2c_probe(struct i2c_client *client,
 	err = akm09915_create_attr(
 		&(akm09915_init_info.platform_diver_addr->driver));
 	if (err) {
-		pr_err("create attribute err = %d\n", err);
+		pr_debug("create attribute err = %d\n", err);
 		goto exit_sysfs_create_group_failed;
 	}
 
 	err = misc_register(&akm09915_device);
 	if (err) {
-		pr_err("akm09915_device register failed\n");
+		pr_debug("akm09915_device register failed\n");
 		goto exit_misc_device_register_failed;
 	}
 
@@ -2946,7 +2946,7 @@ static int akm09915_i2c_probe(struct i2c_client *client,
 
 	err = mag_register_control_path(&ctl);
 	if (err) {
-		pr_err("register mag control path err\n");
+		pr_debug("register mag control path err\n");
 		goto exit_kfree;
 	}
 
@@ -2956,7 +2956,7 @@ static int akm09915_i2c_probe(struct i2c_client *client,
 
 	err = mag_register_data_path(&mag_data);
 	if (err) {
-		pr_err("register data control path err\n");
+		pr_debug("register data control path err\n");
 		goto exit_kfree;
 	}
 
@@ -2970,7 +2970,7 @@ exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 exit:
-	pr_err("%s: err = %d\n", __func__, err);
+	pr_debug("%s: err = %d\n", __func__, err);
 	akm09915_init_flag = -1;
 	return err;
 }
@@ -2983,7 +2983,7 @@ static int akm09915_i2c_remove(struct i2c_client *client)
 	err = akm09915_delete_attr(
 		&(akm09915_init_info.platform_diver_addr->driver));
 	if (err)
-		pr_err("akm09915_delete_attr fail: %d\n", err);
+		pr_debug("akm09915_delete_attr fail: %d\n", err);
 
 	this_client = NULL;
 	i2c_unregister_device(client);
@@ -3003,7 +3003,7 @@ static int akm09915_remove(void)
 static int akm09915_local_init(void)
 {
 	if (i2c_add_driver(&akm09915_i2c_driver)) {
-		pr_err("i2c_add_driver error\n");
+		pr_debug("i2c_add_driver error\n");
 		return -1;
 	}
 	if (-1 == akm09915_init_flag)
