@@ -66,6 +66,9 @@ endif
 
     endif
 
+# Remove debugging
+export TARGET_BUILD_VARIANT=user
+
 # Bluetooth
 obj-$(CONFIG_MTK_COMBO_BT) += bt/mt66xx/legacy/
 
